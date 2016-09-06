@@ -40,19 +40,28 @@ tabla.hijos.casado <- hog.hijos %>%
   summarise(casos = sum(pondeh)) %>% 
   mutate(freq = round((casos/29405552)*100,0))
 
-tabla.sc.edad <- hog.hijos %>% 
+tabla.sc.edad.1 <- hog.hijos %>% 
   left_join(ponderador) %>% 
-  group_by(redad,sc.jefe) %>% 
+  mutate(civil = ifelse(sc.jefe %in% c("separado","divorciado"),"separado o divorciado",
+                        as.character(sc.jefe)))
+tabla.sc.edad.1$civil <- factor(tabla.sc.edad.1$civil, 
+                              levels = c("casado","unión libre", "separado o divorciado","soltero","viudo"))
+
+tabla.sc.edad.2 <- tabla.sc.edad.1 %>% 
+  group_by(redad,civil) %>% 
   summarise(casos = sum(pondeh)) %>% 
   mutate(freq = round((casos/sum(casos))*100,0))
 
-ggplot(tabla.sc.edad,aes(x=redad,y=freq, fill = sc.jefe, label = freq)) + 
+
+gg.sc.edad <- ggplot(tabla.sc.edad.2,aes(x=redad,y=freq, fill = civil, label = freq)) + 
   theme_bw() +
   geom_bar(stat = "identity", position = "stack") + 
   geom_text(position = "stack", vjust = 1, size = 6, color = "gray") + 
   xlab(" ") + ylab("%")
 
-    
+ggsave(plot = gg.sc.edad, filename = '/Users/david/Documents/cad/infografias/Familias/graphs/edocivil_edad.svg', 
+       width = 5.5, height = 6)
+
 tabla.sc.edad.ch <- hog.hijos %>% 
   left_join(ponderador) %>% 
   filter(hijos==1) %>% 
@@ -104,7 +113,7 @@ edo_subdiag <- left_join(edo_df, tabla.fam.trad.map, by = 'id')
 edo_subdiag.2 <- left_join(edo_df, tabla.fam.trad.map.jov, by = 'id') 
 
 # Mapa proporcion de hogares objetivo
-gg.1 <- ggplot(data = edo_subdiag, aes(long, lat, group=group)) + 
+gg.mapa.total <- ggplot(data = edo_subdiag, aes(long, lat, group=group)) + 
   theme_bw() + 
   geom_polygon( aes(fill = prop, group = group),
                 color='black', size = .4) + 
@@ -116,7 +125,7 @@ gg.1 <- ggplot(data = edo_subdiag, aes(long, lat, group=group)) +
   guides(fill = guide_legend(title = "Proporción de hogares tradicionales")) +
   theme(legend.position = 'top')
 
-gg.2 <- ggplot(data = edo_subdiag.2, aes(long, lat, group=group)) + 
+gg.mapa.jovenes <- ggplot(data = edo_subdiag.2, aes(long, lat, group=group)) + 
   theme_bw() + 
   geom_polygon( aes(fill = prop, group = group),
                 color='black', size = .4) + 
@@ -125,10 +134,12 @@ gg.2 <- ggplot(data = edo_subdiag.2, aes(long, lat, group=group)) +
         axis.title = element_blank()
   ) + 
   scale_fill_continuous(low = 'white', high = '#132B43') + 
-  guides(fill = guide_legend(title = "Proporción de hogares tradicionales")) +
+  guides(fill = guide_legend(title = "Proporción de hogares jóvenes tradicionales")) +
   theme(legend.position = 'top')
 
 
-#ggsave(plot = gg, filename = 'graphs/hogares_tradicionales.pdf', 
-#       width = 5.5, height = 6)
+ggsave(plot = gg.mapa.total, filename = '/Users/david/Documents/cad/infografias/Familias/graphs/mapa_total.svg', 
+       width = 10, height = 6)
 
+ggsave(plot = gg.mapa.jovenes, filename = '/Users/david/Documents/cad/infografias/Familias/graphs/mapa_jovenes.svg', 
+       width = 10, height = 6)
